@@ -1,10 +1,27 @@
 import { gql } from "apollo-boost";
-import { useMutation } from "@apollo/react-hooks";
-import { useState } from "react";
+import { useMutation, useQuery } from "@apollo/react-hooks";
+import { useEffect, useState } from "react";
+import { useHistory, useParams } from "react-router";
 
-const CREATE_MESSAGE = gql`
-  mutation CreateMessage($title: String!, $content: String!, $author: String!) {
-    createMessage(
+const GET_MESSAGE = gql`
+  query GetMessage($id: String!) {
+    getMessage(_id: $id) {
+      title
+      content
+      author
+    }
+  }
+`;
+
+const UPDATE_MESSAGE = gql`
+  mutation UpdateMessage(
+    $id: String!
+    $title: String!
+    $content: String!
+    $author: String!
+  ) {
+    updateMessage(
+      _id: $id
       message: { title: $title, content: $content, author: $author }
     ) {
       _id
@@ -15,23 +32,41 @@ const CREATE_MESSAGE = gql`
   }
 `;
 
-const MessageForm = () => {
+const UpdateForm = () => {
+  let history = useHistory();
+  const { id } = useParams();
+
+  const { loading, error, data } = useQuery(GET_MESSAGE, {
+    variables: { id }
+  });
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [author, setAuthor] = useState("");
-  const [createMessage] = useMutation(CREATE_MESSAGE);
+  const [updateMessage] = useMutation(UPDATE_MESSAGE);
+
+  useEffect(() => {
+    if (data && data.getMessage.title) {
+      setTitle(data.getMessage.title);
+      setContent(data.getMessage.content);
+      setAuthor(data.getMessage.author);
+    }
+  }, [data]);
+
+  const submitData = async (e) => {
+    e.preventDefault();
+    await updateMessage({ variables: { id, title, author, content } });
+    history.push(`/`);
+  };
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
 
   return (
     <div className="col-md-6 offset-md-3">
       <div className="card">
         <div className="card-body">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              console.log(title, author, content);
-              createMessage({ variables: { title, author, content } });
-            }}
-          >
+          <form onSubmit={(e) => submitData(e)}>
             <div className="form-group">
               <input
                 onChange={(e) => setAuthor(e.target.value)}
@@ -70,4 +105,4 @@ const MessageForm = () => {
   );
 };
 
-export default MessageForm;
+export default UpdateForm;

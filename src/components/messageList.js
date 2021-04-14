@@ -1,5 +1,7 @@
 import { gql } from "apollo-boost";
-import { useQuery } from "@apollo/react-hooks";
+import { useMutation, useQuery } from "@apollo/react-hooks";
+import { useEffect, useState } from "react";
+import { useHistory } from "react-router";
 
 const GET_MESSAGES = gql`
   query {
@@ -12,13 +14,32 @@ const GET_MESSAGES = gql`
   }
 `;
 
+const DELETE_MESSAGE = gql`
+  mutation deleteMessage($id: String!) {
+    deleteMessage(_id: $id) {
+      _id
+    }
+  }
+`;
+
 const MessageList = () => {
-  const { loading, error, data } = useQuery(GET_MESSAGES);
+  let history = useHistory();
 
-  if (loading) return <p>Loading...</p>;
+  const { loading: queryLoading, error, data, refetch } = useQuery(
+    GET_MESSAGES
+  );
+  const [deleteMessage] = useMutation(DELETE_MESSAGE, {
+    onCompleted(data) {
+      refetch();
+    },
+  });
+
+  const removeNote = async ($id) => {
+    await deleteMessage({ variables: { id: $id } });
+  };
+
+  if (queryLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-
-  console.log(data);
 
   return (
     <div className="row">
@@ -26,9 +47,27 @@ const MessageList = () => {
         {data.messages.map(({ _id, title, content, author }) => (
           <div key={_id} className="card m-2">
             <div className="card-body">
-              <h4>{title}</h4>
-              <p>{content}</p>
-              <p>{author}</p>
+              <div className="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm m-1"
+                  onClick={() => removeNote(_id)}
+                >
+                  borrar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-warning btn-sm m-1"
+                  onClick={() => history.push(`/update-message/${_id}`)}
+                >
+                  editar
+                </button>
+              </div>
+              <div className="d-grid gap-2">
+                <h4>{title}</h4>
+                <p>{content}</p>
+                <p>{author}</p>
+              </div>
             </div>
           </div>
         ))}

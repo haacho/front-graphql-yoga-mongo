@@ -7,10 +7,11 @@ import reportWebVitals from "./reportWebVitals";
 import "bootswatch/dist/lux/bootstrap.min.css";
 
 import ApolloClient from "apollo-boost";
-import { ApolloProvider } from "@apollo/react-hooks";
+import { ApolloProvider, InMemoryCache } from "@apollo/react-hooks";
 
 const client = new ApolloClient({
   uri: "http://localhost:3100",
+  cache: new InMemoryCache(),
 });
 
 ReactDOM.render(
